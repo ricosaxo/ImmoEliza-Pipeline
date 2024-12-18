@@ -1,0 +1,62 @@
+name: Run Scraper on Schedule and Push
+
+on:
+  # Run every 12 hours
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    # Step 2: Verify assets directory and database file
+    - name: Verify assets directory
+      run: |
+        if [ -d "assets" ]; then
+          echo "Assets directory exists";
+          if [ -f "assets/immo_elliza.db" ]; then
+            echo "Database file exists in assets";
+          else
+            echo "Database file is missing in assets";
+            exit 1;
+          fi
+        else
+          echo "Assets directory is missing";
+          exit 1;
+        fi
+
+    # Step 3: Set up Python environment
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11.9" # Replace with the Python version your script requires
+
+    # Step 4: Install dependencies
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    # Step 5: Print working directory and list all files
+    - name: Print working directory
+      run: pwd
+
+    - name: List all files
+      run: ls -R
+
+    # Step 6: Check SQLite version
+    - name: Check SQLite Version
+      run: sqlite3 --version
+
+    # Step 7: Run the scraper
+    - name: Run scraper
+      run: |
+        python scraper.py

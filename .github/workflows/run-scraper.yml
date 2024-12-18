@@ -19,6 +19,9 @@ jobs:
     # Optional: print files
     - name: List files
       run: ls -R
+
+    - name: Check SQLite Version
+      run: sqlite3 --version
     
     # Step 1: Checkout the repository
     - name: Checkout code

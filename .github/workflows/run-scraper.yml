@@ -17,8 +17,11 @@ jobs:
 
     steps:
     # Optional: print files
-    - name: List files
+    - name: List all files
       run: ls -R
+    
+    - name: Print working directory
+      run: pwd
 
     - name: Check SQLite Version
       run: sqlite3 --version

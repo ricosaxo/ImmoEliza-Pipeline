@@ -8,6 +8,8 @@ from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from random import randint
 
+import os
+
 # Database file
 DB_FILE = "assets/immo_elliza.db"
 
@@ -15,6 +17,9 @@ sitemap_url = "https://www.immoweb.be/sitemap.xml"
 headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36'
 }
+
+
+print(f"Database absolute path: {os.path.abspath(DB_FILE)}")
 
 def retry_request(url, headers, retries=3, timeout=10):
     for attempt in range(retries):

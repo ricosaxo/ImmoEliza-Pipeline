@@ -181,12 +181,14 @@ def update_links(links): #links = filtered_links from Sitemap
     
     
     # Insert new links
+   # Insert new links, ignoring duplicates
     for link in new_links:
         classified_id = extract_classified_id(link)
         cursor.execute("""
-            INSERT INTO links (url, classified_id, status, created_at, updated_at)
+            INSERT OR IGNORE INTO links (url, classified_id, status, created_at, updated_at)
             VALUES (?, ?, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         """, (link, classified_id))
+
     
     # Update timestamps for links still active
     for link in still_active_links:

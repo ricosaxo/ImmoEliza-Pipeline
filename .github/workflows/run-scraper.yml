@@ -16,6 +16,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # Optional: print files
+    - name: List files
+      run: ls -R
+    
     # Step 1: Checkout the repository
     - name: Checkout code
       uses: actions/checkout@v3

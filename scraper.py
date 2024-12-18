@@ -158,6 +158,11 @@ def update_links(links): #links = filtered_links from Sitemap
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
+    # Log existing classified IDs
+    cursor.execute("SELECT classified_id FROM links")
+    existing_ids = set(row[0] for row in cursor.fetchall())
+    print(f"Existing classified IDs in database: {existing_ids}")
+
     # Get existing URLs from the database
     cursor.execute("SELECT url FROM links")
     existing_links = set(row[0] for row in cursor.fetchall())
@@ -167,6 +172,8 @@ def update_links(links): #links = filtered_links from Sitemap
     new_links = links_set - existing_links
     still_active_links = links_set & existing_links
     missing_links = existing_links - links_set
+
+    
     
     # Insert new links
     for link in new_links:

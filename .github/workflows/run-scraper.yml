@@ -22,6 +22,15 @@ jobs:
 
     - name: Check SQLite Version
       run: sqlite3 --version
+
+    - name: Verify database file
+      run: |
+        if [ -f "assets/immo_elliza.db" ]; then
+          echo "Database file exists";
+        else
+          echo "Database file is missing";
+          exit 1;
+        fi
     
     # Step 1: Checkout the repository
     - name: Checkout code

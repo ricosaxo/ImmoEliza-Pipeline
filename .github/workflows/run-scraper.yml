@@ -4,11 +4,6 @@ on:
   # Run every 12 hours
   schedule:
     - cron: "0 1 * * *"
-  # Run on every push to the repository
-  push:
-    branches:
-      - main  # Adjust to the branch you want to monitor (e.g., main or master)
-  # Allow manual triggering
   workflow_dispatch:
 
 jobs:

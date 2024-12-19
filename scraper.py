@@ -280,8 +280,8 @@ def process_and_scrape_links_concurrent():
                 "number_of_facades": safe_get(classified_data, 'property', 'building', 'facadeCount'),
                 "state_of_building": safe_get(classified_data, 'property', 'building', 'condition'),
                 "construction_year": safe_get(classified_data, 'property', 'building', 'constructionYear'),
-                "furnished": safe_get(classified_data, 'transaction', 'isFurnished'),
-                "epc": safe_get(classified_data, 'property', 'propertyCertificates', 'primaryEnergyConsumptionLevel'),
+                "furnished": safe_get(classified_data, 'transaction', 'sale', 'isFurnished'),
+                "epc": safe_get(classified_data, 'transaction', 'certificates', 'epcScore'),
                 "kwh": safe_get(classified_data, 'transaction', 'certificates', 'primaryEnergyConsumptionPerSqm'),
                 "landSurface": safe_get(classified_data, 'property', 'land', 'surface')
             }

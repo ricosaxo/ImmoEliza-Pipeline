@@ -3,6 +3,7 @@ import requests
 import time
 import re
 import json
+import csv
 
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -166,7 +167,6 @@ def update_links(links): #links = filtered_links from Sitemap
     # Log existing classified IDs
     cursor.execute("SELECT classified_id FROM links")
     existing_ids = set(row[0] for row in cursor.fetchall())
-    print(f"Existing classified IDs in database: {existing_ids}")
 
     # Get existing URLs from the database
     cursor.execute("SELECT url FROM links")
@@ -362,6 +362,84 @@ def process_and_scrape_links_concurrent():
     conn.commit()
     conn.close()
 
+import csv
+import sqlite3  # Replace with your specific database library
+
+def create_csv_for_preprocessing():
+    """
+    Export properties table to a CSV so the preporcessing can use it.
+    """
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+
+    # Define the database columns and desired CSV headers
+    db_columns = [
+        "id", "link_id", "locality_name", "postal_code", "price",
+        "property_type", "property_subtype", "number_of_bedrooms", "living_area",
+        "street", "number", "latitude", "longitude", "open_fire",
+        "swimming_pool", "hasTerrace", "terraceSurface", "hasGarden",
+        "gardenSurface", "kitchen_type", "number_of_facades",
+        "state_of_building", "construction_year", "furnished", "epc",
+        "kwh", "landSurface", "scraped_at"
+    ]
+    
+    csv_headers = [
+        "id", "locality_name", "Postal_code", "Price", "Subtype", "Number_of_rooms",
+        "Number_of_bedrooms", "Living_area", "sale_annuity", "Type_of_sale",
+        "street", "number", "latitude", "longitude", "Open_fire",
+        "Swimming_Pool", "hasTerrace", "terraceSurface", "hasGarden",
+        "gardenSurface", "Kitchen_type", "Number_of_facades",
+        "State_of_building", "Furnished", "Starting_price", "epc", "landSurface"
+    ]
+    
+    # Create a mapping of CSV headers to database columns
+    column_mapping = {
+        "id": "id",
+        "locality_name": "locality_name",
+        "Postal_code": "postal_code",
+        "Price": "price",
+        "Subtype": "property_subtype",
+        "Number_of_rooms": None,  # No matching column
+        "Number_of_bedrooms": "number_of_bedrooms",
+        "Living_area": "living_area",
+        "sale_annuity": None,  # No matching column
+        "Type_of_sale": None,  # No matching column
+        "street": "street",
+        "number": "number",
+        "latitude": "latitude",
+        "longitude": "longitude",
+        "Open_fire": "open_fire",
+        "Swimming_Pool": "swimming_pool",
+        "hasTerrace": "hasTerrace",
+        "terraceSurface": "terraceSurface",
+        "hasGarden": "hasGarden",
+        "gardenSurface": "gardenSurface",
+        "Kitchen_type": "kitchen_type",
+        "Number_of_facades": "number_of_facades",
+        "State_of_building": "state_of_building",
+        "Furnished": "furnished",
+        "Starting_price": None,  # No matching column
+        "epc": "epc",
+        "landSurface": "landSurface"
+    }
+
+    # Fetch data from the database
+    cursor.execute(f"SELECT {', '.join(db_columns)} FROM properties")
+    rows = cursor.fetchall()
+
+    # Write the data to CSV
+    with open("assets/export.csv", mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(csv_headers)  # Write the header row
+
+        for row in rows:
+            # Map the database row to the CSV row
+            csv_row = [
+                row[db_columns.index(column_mapping[csv_header])] if column_mapping[csv_header] in db_columns else "NULL"
+                for csv_header in csv_headers
+            ]
+            writer.writerow(csv_row)
+
 
 def main():
     """
@@ -395,9 +473,14 @@ def main():
     process_and_scrape_links_concurrent()  # Combine checking and scraping into one step
     print(f"⏲️ Link processing and scraping completed in {time.time() - start:.2f} seconds\n")
     
-    # Step 6: Total time taken
+    # Step 6: create a csv file for the preprocessing to start
+    print("CSV Creating process starting...")
+    start = time.time()
+    create_csv_for_preprocessing()
+    print(f"⏲️ CSV created {time.time() - start:.2f} seconds\n")
+    
+    # Step 7: Total time taken
     print(f"⏲️ Entire script completed in {time.time() - overall_start:.2f} seconds ⏲️")
 
 if __name__ == "__main__":
     main()
-

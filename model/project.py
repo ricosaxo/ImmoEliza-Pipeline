@@ -14,7 +14,7 @@ from typing import Dict, Any
 import joblib 
 
 
-def load_data(input_path: str, correlation_threshold: float = 0.25, plot: bool = True, file_type: str = "pickle") -> pd.DataFrame:
+def load_data(input_path: str, correlation_threshold: float = 0.10, plot: bool = True, file_type: str = "pickle") -> pd.DataFrame:
     """
     Load data from a file (pickle or CSV), select features based on correlation with 'Price',
     and optionally display a heatmap and scatter plots of selected features with 'Price'.

@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.operators.bash_operator import BashOperator
+from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
 
 
@@ -15,8 +15,8 @@ dag = DAG(
     default_args=default_args,
     description='runs scraper, preprocessing, model scripts',
     schedule_interval='@weekly',
-    start_date=datetime(2024, 12, 22),
-    catchup=False,
+    start_date=datetime(2024, 12, 20),
+    catchup=True,
 )
 
 

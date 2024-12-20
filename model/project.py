@@ -13,16 +13,13 @@ import numpy as np
 from typing import Dict, Any
 import joblib 
 
-
-def load_data(input_path: str, correlation_threshold: float = 0.10, plot: bool = True, file_type: str = "pickle") -> pd.DataFrame:
+def load_data(input_path: str, correlation_threshold: float = 0.10, file_type: str = "pickle") -> pd.DataFrame:
     """
-    Load data from a file (pickle or CSV), select features based on correlation with 'Price',
-    and optionally display a heatmap and scatter plots of selected features with 'Price'.
-    
+    Load data from a file (pickle or CSV), select features based on correlation with 'Price'.
+
     Args:
         input_path (str): Path to the data file.
         correlation_threshold (float): Minimum correlation threshold for feature selection.
-        plot (bool): Whether to display plots for correlation heatmap and scatter plots. Default is True.
         file_type (str): Type of file to load ('pickle' or 'csv'). Default is 'pickle'.
 
     Returns:
@@ -32,7 +29,7 @@ def load_data(input_path: str, correlation_threshold: float = 0.10, plot: bool =
     # Load the data based on file type
     print(f"Loading data from: {input_path}")
     pd.set_option('display.max_columns', None)
-    
+
     if file_type == "pickle":
         df = pd.read_pickle(input_path)
     elif file_type == "csv":
@@ -50,7 +47,7 @@ def load_data(input_path: str, correlation_threshold: float = 0.10, plot: bool =
         print("No missing values found in the dataset.")
 
     # Exclude specific columns from processing
-    columns_to_exclude = ['price_per_sqm', 'price_per_sqm_land', 'epc']
+    columns_to_exclude = ['price_per_sqm', 'price_per_sqm_land', 'epc','Postal_code']
     df = df.drop(columns=[col for col in columns_to_exclude if col in df.columns], errors='ignore')
 
     # Identify non-numeric columns to be encoded later if needed
@@ -77,29 +74,11 @@ def load_data(input_path: str, correlation_threshold: float = 0.10, plot: bool =
     if non_numeric_columns:
         print("Non-numeric columns to encode:", non_numeric_columns)
 
-    # Plotting section
-    if plot:
-        # Display heatmap of correlations
-        plt.figure(figsize=(10, 6))
-        sns.heatmap(df_selected.corr(), annot=True, cmap='coolwarm', fmt=".2f")
-        plt.title("Correlation Heatmap of Selected Features")
-        plt.show()
-
-        # Generate scatter plots for each selected feature against Price
-        for feature in df_selected.columns:
-            if feature != 'Price':
-                plt.figure(figsize=(6, 4))
-                sns.scatterplot(data=df_selected, x=feature, y='Price')
-                plt.title(f"Scatter Plot of {feature} vs Price")
-                plt.xlabel(feature)
-                plt.ylabel("Price")
-                plt.show()
-
     # Display basic information about the selected data
-    display(df_selected.info())
-    display(df_selected.head())
-    display(df_selected.describe())
-    
+    print(df_selected.info())
+    print(df_selected.head())
+    print(df_selected.describe())
+
     return df_selected
 
 def create_model_pipeline(model: Any) -> Pipeline:
@@ -110,7 +89,7 @@ def create_model_pipeline(model: Any) -> Pipeline:
         model: A scikit-learn model object
     
     Returns:
-        Pipeline: Scikit-learn pipeline with standardization and model
+        Pipeline: Scikit-lelearn pipeline with standardization and model
     """
     return Pipeline([
         ('scaler', StandardScaler()),
@@ -207,7 +186,8 @@ def hyperparameter_tuning(
         n_iter=10,
         cv=KFold(n_splits=6, shuffle=True, random_state=42),
         random_state=42,
-        n_jobs=-1  # Use all available cores
+        n_jobs=-1,
+        verbose=2
     )
     
     rscv.fit(X, y)
@@ -237,139 +217,99 @@ def hyperparameter_tuning(
     
     return results
 
-
-
-
-
-
-
-
-
-models = {
-    'Linear Regression': LinearRegression(),
-    'Ridge Regression': Ridge(),
-    'Lasso Regression': Lasso(),
-    'Random Forest': RandomForestRegressor(),
-    'XGBoost': xgb.XGBRegressor(eval_metric='rmse')
-}
-
-# Define hyperparameter distributions
-param_distributions = {
-    'Linear Regression': {'model__fit_intercept': [True, False]},
-    'Ridge Regression': {'model__alpha': np.linspace(0.0001,1,10), 'model__solver':['auto','svd','cholesky','lsqr','sparse_cg','sag','saga']},
-    'Lasso Regression': {'model__alpha': np.logspace(-3, 3, 7),'model__fit_intercept': [True, False],'model__selection': ['random', 'cyclic']},
-    'Random Forest': {'model__n_estimators': [50, 100, 200, 500],'model__max_depth': [None, 10, 20, 30, 40],'model__min_samples_split': [2, 5, 10],'model__min_samples_leaf': [1, 2, 4],'model__max_features': ['auto', 'sqrt', 'log2'],'model__bootstrap': [True, False]},
-    'XGBoost': {'model__n_estimators': [50, 100],'model__max_depth': [3, 5],'model__learning_rate': [0.1, 0.2],'model__subsample': [0.5, 0.75],'model__colsample_bytree': [0.5, 0.75]}
+def main():
+    models = {
+        'Linear Regression': LinearRegression(),
+        'Ridge Regression': Ridge(),
+        'Lasso Regression': Lasso(),
+        'Random Forest': RandomForestRegressor(),
+        'XGBoost': xgb.XGBRegressor(eval_metric='rmse')
     }
 
-# Load your data
-input_path = r'output/output_preprocessing.csv'
-df_selected = load_data(input_path = input_path, file_type='csv')
+    # Define hyperparameter distributions
+    param_distributions = {
+        'Linear Regression': {'model__fit_intercept': [True, False]},
+        'Ridge Regression': {'model__alpha': np.linspace(0.0001,1,10), 'model__solver':['auto','svd','cholesky','lsqr','sparse_cg','sag','saga']},
+        'Lasso Regression': {'model__alpha': np.logspace(-3, 3, 7),'model__fit_intercept': [True, False],'model__selection': ['random', 'cyclic']},
+        'Random Forest': {'model__n_estimators': [50, 100, 200, 500],'model__max_depth': [None, 10, 20, 30, 40],'model__min_samples_split': [2, 5, 10],'model__min_samples_leaf': [1, 2, 4],'model__max_features': [None,'sqrt', 'log2'],'model__bootstrap': [True, False]},
+        'XGBoost': {'model__n_estimators': [50, 100],'model__max_depth': [3, 5],'model__learning_rate': [0.1, 0.2],'model__subsample': [0.5, 0.75],'model__colsample_bytree': [0.5, 0.75]}
+    }
 
-# Split data into features and target
-X = df_selected.drop(columns=['Price'])  # Assuming 'Price' is the target
-y = df_selected['Price']
+    # Load your data
+    input_path = r'output/output_preprocessing.csv'
+    df_selected = load_data(input_path = input_path, file_type='csv')
 
-# Train and evaluate each model
-model_results = {}
+    # Split data into features and target
+    X = df_selected.drop(columns=['Price'])  # Assuming 'Price' is the target
+    y = df_selected['Price']
 
-for model_name, model in models.items():
-    # Train and evaluate the model
-    metrics = train_and_evaluate_model(X, y, model, model_name)
-    model_results[model_name] = metrics
+    # Train and evaluate each model
+    model_results = {}
 
-# Optionally, perform hyperparameter tuning for each model
-for model_name, model in models.items():
-    if model_name in param_distributions:  # Ensure there are parameters defined for tuning
-        results = hyperparameter_tuning(X, y, model, param_distributions[model_name], model_name=model_name)
-        model_results[f"{model_name} Tuning"] = results
+    for model_name, model in models.items():
+        # Train and evaluate the model
+        metrics = train_and_evaluate_model(X, y, model, model_name)
+        model_results[model_name] = metrics
 
-# Output all model results
-for name, result in model_results.items():
-    print(f"\n{name} Results:")
-    for key, value in result.items():
-        print(f"  {key}: {value}")
-        
-# Find the best model based on cross-validation score after tuning
-best_model_name, best_model_result = None, None
-best_cv_score = -np.inf
+    # Optionally, perform hyperparameter tuning for each model
+    for model_name, model in models.items():
+        if model_name in param_distributions:  # Ensure there are parameters defined for tuning
+            results = hyperparameter_tuning(X, y, model, param_distributions[model_name], model_name=model_name)
+            model_results[f"{model_name} Tuning"] = results
 
-# Find the best model based on tuning cross-validation scores
-for name, result in model_results.items():
-    if "Tuning" in name:  # Only consider tuned models
-        if result['best_score'] > best_cv_score:
-            best_cv_score = result['best_score']
-            best_model_name = name
-            best_model_result = result
+    # Output all model results
+    for name, result in model_results.items():
+        print(f"\n{name} Results:")
+        for key, value in result.items():
+            print(f"  {key}: {value}")
+            
+    # Find the best model based on cross-validation score after tuning
+    best_model_name, best_model_result = None, None
+    best_cv_score = -np.inf
 
-# Display the best model found
-if best_model_result:
-    print(f"\nOverall best Model: {best_model_name}")
-    print("Best Parameters:", best_model_result['best_params'])
-    print("Best Cross-Validation Score:", best_cv_score)
+    # Find the best model based on tuning cross-validation scores
+    for name, result in model_results.items():
+        if "Tuning" in name:  # Only consider tuned models
+            if result['best_score'] > best_cv_score:
+                best_cv_score = result['best_score']
+                best_model_name = name
+                best_model_result = result
 
-    # Make a sample prediction
-    # Select a sample row for comparison
-    sample_index = 0  # Choose the row index you want to use for the sample
-    sample_input = X.iloc[sample_index].values.reshape(1, -1)  # Reshape for single prediction
+    # Display the best model found
+    if best_model_result:
+        print(f"\nOverall best Model: {best_model_name}")
+        print("Best Parameters:", best_model_result['best_params'])
+        print("Best Cross-Validation Score:", best_cv_score)
 
-    # Predict the price using the best model
-    best_model = best_model_result['best_model']
-    sample_prediction = best_model.predict(sample_input)
+        # Make a sample prediction
+        sample_index = 0  # Choose the row index you want to use for the sample
+        sample_input = X.iloc[sample_index].values.reshape(1, -1)  # Reshape for single prediction
 
-    # Get the actual price for comparison
-    real_price = y.iloc[sample_index]
+        best_model = best_model_result['best_model']
+        sample_prediction = best_model.predict(sample_input)
 
-    # Print results
-    print(f"\nSample Prediction with {best_model_name}:")
-    print("  Input features:", X.iloc[sample_index].to_dict())
-    print("  Predicted Price:", sample_prediction[0])
-    print("  Actual Price:", real_price)
-    print(f"  Difference (Predicted - Actual): {sample_prediction[0] - real_price:.2f}")
-else:
-    print("No tuned models were found.")
+        real_price = y.iloc[sample_index]
 
-
-# Plot feature weights or importance for the best model
-def plot_feature_importance(best_model, feature_names):
-    if hasattr(best_model.named_steps['model'], 'coef_'):
-        # For linear models with coefficients
-        weights = best_model.named_steps['model'].coef_
-        title = "Feature Weights (Coefficients)"
-    elif hasattr(best_model.named_steps['model'], 'feature_importances_'):
-        # For ensemble models like Random Forest
-        weights = best_model.named_steps['model'].feature_importances_
-        title = f"Feature Importance of {best_model_name} "
+        print(f"\nSample Prediction with {best_model_name}:")
+        print("  Input features:", X.iloc[sample_index].to_dict())
+        print("  Predicted Price:", sample_prediction[0])
+        print("  Actual Price:", real_price)
+        print(f"  Difference (Predicted - Actual): {sample_prediction[0] - real_price:.2f}")
     else:
-        print("The best model does not have feature weights or importance values.")
-        return
+        print("No tuned models were found.")
 
-    # Plot the feature weights or importance
-    plt.figure(figsize=(14, max(8, len(feature_names) * 0.35)))
-    plt.barh(feature_names, weights, color='skyblue')
-    plt.xlabel("Weight / Importance")
-    plt.title(title)
-    plt.gca().invert_yaxis()  # Reverse order for better visibility
-    plt.show()
+        
+    # Retrain the best model on the entire dataset
+    if best_model_result:
+        best_model = best_model_result['best_model']
+        best_model.fit(X, y)  # Fit the best model on the entire dataset
 
-# Get feature names from the dataset
-feature_names = X.columns
+        # Save the retrained model
+        model_filename = 'best_trained_model.pkl'
+        joblib.dump(best_model, model_filename)
+        print(f"Best model retrained and saved as {model_filename}")
+    else:
+        print("No best model was found to retrain.")
 
-# Plot feature weights for the best model if it was found
-if best_model_result:
-    plot_feature_importance(best_model, feature_names)
-else:
-    print("No best model was found to plot feature weights.")
-    
-
-# Retrain the best model on the entire dataset
-if best_model_result:
-    best_model = best_model_result['best_model']
-    best_model.fit(X, y)  # Fit the best model on the entire dataset
-
-    # Save the retrained model
-    model_filename = 'best_trained_model.pkl'
-    joblib.dump(best_model, model_filename)
-    print(f"Best model retrained and saved as {model_filename}")
-else:
-    print("No best model was found to retrain.")
+if __name__ == "__main__":
+    main()

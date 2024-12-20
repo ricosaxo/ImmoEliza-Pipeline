@@ -64,4 +64,4 @@ jobs:
     # Step 7: Run the scraper
     - name: Run scraper
       run: |
-        python scraper.py
+        python scraper/scraper.py

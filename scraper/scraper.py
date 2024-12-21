@@ -89,9 +89,7 @@ def initialize_properties_table():
             number_of_facades INTEGER,
             state_of_building TEXT,
             construction_year INTEGER,
-            furnished TEXT,
             epc TEXT,
-            kwh TEXT,
             landSurface TEXT,
             scraped_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (link_id) REFERENCES links(classified_id)
@@ -257,6 +255,37 @@ def process_and_scrape_links_concurrent():
             classified_data = json.loads(match.group(1))
 
             # Extract data using a helper function
+            kwh = safe_get(classified_data, 'transaction', 'certificates', 'primaryEnergyConsumptionPerSqm')
+            epc = safe_get(classified_data, 'transaction', 'certificates', 'epcScore')
+
+            # If EPC is not None or 0 and is not an integer (ensuring it must be a valid EPC string), skip further checks
+            if epc not in (None, 0) and not isinstance(epc, int):
+                pass  # EPC is already valid, nothing to do
+
+            else:  # EPC is null or 0, so we use kwh to determine it
+                if kwh is None:  # If kwh is also null, skip the link
+                    raise ValueError("Both epc and kwh are missing, skipping this link")
+                
+                # Validate kwh: Ensure it's not too low
+                if kwh < -100:
+                    raise ValueError("kwh too low to be valid, skipping this link")
+                
+                # Calculate EPC based on kwh
+                if -99 < kwh < 0:
+                    epc = "A+"
+                elif 0 <= kwh < 100:
+                    epc = "A"
+                elif 100 <= kwh < 200:
+                    epc = "B"
+                elif 200 <= kwh < 300:
+                    epc = "C"
+                elif 300 <= kwh < 400:
+                    epc = "D"
+                elif 400 <= kwh < 500:
+                    epc = "E"
+                elif kwh >= 500:
+                    epc = "F"
+
             scraped_data = {
                 "link_id": link_id,
                 "locality_name": safe_get(classified_data, 'property', 'location', 'locality'),
@@ -280,9 +309,7 @@ def process_and_scrape_links_concurrent():
                 "number_of_facades": safe_get(classified_data, 'property', 'building', 'facadeCount'),
                 "state_of_building": safe_get(classified_data, 'property', 'building', 'condition'),
                 "construction_year": safe_get(classified_data, 'property', 'building', 'constructionYear'),
-                "furnished": safe_get(classified_data, 'transaction', 'sale', 'isFurnished'),
-                "epc": safe_get(classified_data, 'transaction', 'certificates', 'epcScore'),
-                "kwh": safe_get(classified_data, 'transaction', 'certificates', 'primaryEnergyConsumptionPerSqm'),
+                "epc": epc,  # Use the calculated or existing EPC value
                 "landSurface": safe_get(classified_data, 'property', 'land', 'surface')
             }
 
@@ -293,6 +320,7 @@ def process_and_scrape_links_concurrent():
 
         except Exception as e:
             return link_id, 'error', None, str(e)  # Other error
+
 
     results = []
     # Use ThreadPoolExecutor for concurrency
@@ -314,7 +342,7 @@ def process_and_scrape_links_concurrent():
                     number_of_bedrooms, living_area, street, number, latitude, longitude,
                     open_fire, swimming_pool, hasTerrace, terraceSurface, hasGarden, gardenSurface,
                     kitchen_type, number_of_facades, state_of_building, construction_year,
-                    furnished, epc, kwh, landSurface, scraped_at
+                    epc, landSurface, scraped_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """, (
                 scraped_data["link_id"],
@@ -339,9 +367,7 @@ def process_and_scrape_links_concurrent():
                 scraped_data["number_of_facades"],
                 scraped_data["state_of_building"],
                 scraped_data["construction_year"],
-                scraped_data["furnished"],
                 scraped_data["epc"],
-                scraped_data["kwh"],
                 scraped_data["landSurface"]
             ))
             # Update the link status to 'scraped'
@@ -362,9 +388,6 @@ def process_and_scrape_links_concurrent():
     conn.commit()
     conn.close()
 
-import csv
-import sqlite3  # Replace with your specific database library
-
 def create_csv_for_preprocessing():
     """
     Export properties table to a CSV so the preporcessing can use it.
@@ -379,8 +402,8 @@ def create_csv_for_preprocessing():
         "street", "number", "latitude", "longitude", "open_fire",
         "swimming_pool", "hasTerrace", "terraceSurface", "hasGarden",
         "gardenSurface", "kitchen_type", "number_of_facades",
-        "state_of_building", "construction_year", "furnished", "epc",
-        "kwh", "landSurface", "scraped_at"
+        "state_of_building", "construction_year", "epc",
+        "landSurface", "scraped_at"
     ]
     
     csv_headers = [
@@ -389,7 +412,7 @@ def create_csv_for_preprocessing():
         "street", "number", "latitude", "longitude", "Open_fire",
         "Swimming_Pool", "hasTerrace", "terraceSurface", "hasGarden",
         "gardenSurface", "Kitchen_type", "Number_of_facades",
-        "State_of_building", "Furnished", "Starting_price", "epc", "landSurface"
+        "State_of_building", "Starting_price", "epc", "landSurface"
     ]
     
     # Create a mapping of CSV headers to database columns
@@ -417,7 +440,6 @@ def create_csv_for_preprocessing():
         "Kitchen_type": "kitchen_type",
         "Number_of_facades": "number_of_facades",
         "State_of_building": "state_of_building",
-        "Furnished": "furnished",
         "Starting_price": None,  # No matching column
         "epc": "epc",
         "landSurface": "landSurface"
